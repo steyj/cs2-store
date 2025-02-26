@@ -276,35 +276,75 @@ public static class Event
         return HookResult.Continue;
     }
 
-    public static void OnCheckTransmit(CCheckTransmitInfoList infoList)
+public static void OnCheckTransmit(CCheckTransmitInfoList infoList)
+{
+    if (Instance.InspectList.Count == 0 && Item_Trail.TrailList.Count == 0)
     {
-        if (Instance.InspectList.Count == 0 && Item_Trail.TrailList.Count == 0)
+        return;
+    }
+
+    foreach ((CCheckTransmitInfo info, CCSPlayerController? player) in infoList)
+    {
+        if (player == null || !player.IsValid)
         {
-            return;
+            continue;
         }
 
-        foreach ((CCheckTransmitInfo info, CCSPlayerController? player) in infoList)
+        ulong? playerSteamId = null;
+        try
         {
-            if (player == null)
+            playerSteamId = player.SteamID;
+        }
+        catch (Exception)
+        {
+            continue; 
+        }
+
+        foreach ((CBaseModelEntity entity, CCSPlayerController owner) in Instance.InspectList)
+        {
+            if (owner == null || !owner.IsValid)
             {
                 continue;
             }
 
-            foreach ((CBaseModelEntity entity, CCSPlayerController owner) in Instance.InspectList)
+            ulong? ownerSteamId = null;
+            try
             {
-                if (player.SteamID != owner.SteamID)
-                {
-                    info.TransmitEntities.Remove(entity);
-                }
+                ownerSteamId = owner.SteamID;
+            }
+            catch (Exception)
+            {
+                continue;
             }
 
-            foreach ((CEntityInstance entity, CCSPlayerController owner) in Item_Trail.TrailList)
+            if (playerSteamId != ownerSteamId)
             {
-                if (player.SteamID != owner.SteamID && Item_Trail.HideTrailPlayerList.Contains(player))
-                {
-                    info.TransmitEntities.Remove(entity);
-                }
+                info.TransmitEntities.Remove(entity);
+            }
+        }
+
+        foreach ((CEntityInstance entity, CCSPlayerController owner) in Item_Trail.TrailList)
+        {
+            if (owner == null || !owner.IsValid)
+            {
+                continue;
+            }
+
+            ulong? ownerSteamId = null;
+            try
+            {
+                ownerSteamId = owner.SteamID;
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            if (playerSteamId != ownerSteamId && Item_Trail.HideTrailPlayerList.Contains(player))
+            {
+                info.TransmitEntities.Remove(entity);
             }
         }
     }
+}
 }
